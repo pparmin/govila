@@ -12,7 +12,6 @@ import (
 var (
 	defaultDir = ""
 	initFlags  = flag.NewFlagSet("init", flag.ExitOnError)
-	initType   = initFlags.String("type", "", "defines the type of template to be created")
 	initPath   = initFlags.String("path", defaultDir, "specify the path for the root directory of the project")
 	initName   = initFlags.String("name", "project", "specify the name of your project")
 )
