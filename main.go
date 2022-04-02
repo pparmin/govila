@@ -42,8 +42,12 @@ func main() {
 	case "remove":
 		govila.Remove()
 
+	case "parseMD":
+		govila.ParseMD()
+
 	case "showDefault":
 		govila.ShowDefault(defaultDir)
+
 	default:
 		fmt.Println("No valid subcommand given: expected 'init' subcommand")
 		os.Exit(1)

@@ -1,9 +1,17 @@
 package govila
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+)
+
+var (
+	buf bytes.Buffer
 )
 
 func Init(path, name string) {
@@ -21,6 +29,27 @@ func Help() {
 }
 
 func Remove() {
+	fmt.Println("Removing project...")
+}
+
+func ParseMD() {
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+	)
+	source := []byte(`# Hello World 
+	* one
+	* two
+	* three
+	
+	**CODE:** 
+	## Heading 3`)
+	fmt.Printf("Rendering of Markdown initiated: %s\n", source)
+	if err := md.Convert(source, &buf); err != nil {
+		fmt.Print("Something went wrong during the parsing of markdown: ")
+		log.Fatal(err)
+	}
+	fmt.Printf("Markdown successfully parsed and written to: %s\n", buf.String())
+	//err := os.WriteFile("test.html", []byte(buf))
 
 }
 
