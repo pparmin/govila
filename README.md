@@ -4,7 +4,7 @@ Govila, in it's current form, is an attempt to translate [GitHub](https://github
 
 ## More info about teeny
 
-[GitHub](https://yakkomajuri.github.io/blog/teeny)
-[Blogpost](https://github.com/yakkomajuri/teeny)
+- [GitHub](https://yakkomajuri.github.io/blog/teeny)
+- [Blogpost](https://github.com/yakkomajuri/teeny)
 
 
