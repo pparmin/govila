@@ -36,15 +36,26 @@ func ParseMD() {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
 	)
-	source := []byte(`# Hello World 
-	* one
-	* two
-	* three
-	
-	**CODE:** 
-	## Heading 3`)
+	source, err := os.ReadFile("util/testfiles/test.md")
+	if err != nil {
+		fmt.Print("Something went wrong while reading of file: ")
+		log.Fatal(err)
+	}
+
+	dest, err := os.Create("util/testfiles/test.html")
+	if err != nil {
+		fmt.Print("Something went wrong while creating the file: ")
+		log.Fatal(err)
+	}
+	// source := []byte(`# Hello World
+	// * one
+	// * two
+	// * threeq
+
+	// **CODE:**
+	// ## Heading 3`)
 	fmt.Printf("Rendering of Markdown initiated: %s\n", source)
-	if err := md.Convert(source, &buf); err != nil {
+	if err := md.Convert(source, dest); err != nil {
 		fmt.Print("Something went wrong during the parsing of markdown: ")
 		log.Fatal(err)
 	}

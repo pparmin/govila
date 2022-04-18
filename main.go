@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	defaultDir = ""
-	initFlags  = flag.NewFlagSet("init", flag.ExitOnError)
-	initPath   = initFlags.String("path", defaultDir, "specify the path for the root directory of the project")
-	initName   = initFlags.String("name", "project", "specify the name of your project")
+	defaultPath = getDefaultPath()
+	initFlags   = flag.NewFlagSet("init", flag.ExitOnError)
+	initPath    = initFlags.String("path", defaultPath, "specify the path for the root directory of the project")
+	initName    = initFlags.String("name", "project", "specify the name of your project")
 )
 
 func main() {
@@ -24,7 +24,6 @@ func main() {
 
 	fmt.Println("ARGUMENT: ", os.Args[1])
 	fmt.Println("FLAGS: ", os.Args[2:])
-
 	fmt.Println()
 	switch os.Args[1] {
 	case "init":
@@ -46,7 +45,7 @@ func main() {
 		govila.ParseMD()
 
 	case "showDefault":
-		govila.ShowDefault(defaultDir)
+		govila.ShowDefault(defaultPath)
 
 	default:
 		fmt.Println("No valid subcommand given: expected 'init' subcommand")
@@ -55,7 +54,7 @@ func main() {
 }
 
 func init() {
-	defaultDir = getDefaultPath()
+	defaultPath = getDefaultPath()
 }
 
 func getDefaultPath() (path string) {
