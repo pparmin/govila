@@ -1,3 +1,7 @@
 # Ignore directories
 **/build/
 **/util/testfiles
+/bin 
+/test-blog
+cli_tmp.go
+

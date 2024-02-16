@@ -5,120 +5,140 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
 )
 
-var (
-	buf bytes.Buffer
-)
-
-func Init(path, name string) {
-	fmt.Printf("Initializing project with name '%s'...\n", name)
-	fmt.Printf("Provided path: '%s'\n", path)
-	setup(path, name)
+type Blog struct {
+	Name     string
+	Location string
 }
 
-func Build() {
-	fmt.Println("Building project...")
+func NewBlog(name, path string) *Blog {
+	b := Blog{
+		Name:     name,
+		Location: path,
+	}
+	return &b
 }
 
-func Help() {
-	fmt.Println("Displaying help information...")
+func (b *Blog) Setup(name, path string) {
+	// check if name & path changed from default values
+	if b.Name != name {
+		b.Name = name
+	}
+	if b.Location != path {
+		b.Location = path
+	}
+
+	rootDir := filepath.Join(b.Location, b.Name)
+	fmt.Printf("directory of project: %s\n", rootDir)
+	b.Location = rootDir
+	fmt.Printf("Blog location set to %s\n", b.Location)
+
+	fmt.Printf("Creating root directory for project %s in the following directory: %s\n", b.Name, b.Location)
+	err := os.MkdirAll(b.Location, 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Print("Error during creation of directory: ")
+		log.Fatal(err)
+	} else if os.IsExist(err) {
+		fmt.Print("A blog already exists at this location. Please select a different location")
+		log.Fatal(err)
+	}
+
+	// possibly rename to "content" later
+	pagesDir := filepath.Join(rootDir, "pages")
+	err = os.MkdirAll(pagesDir, 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of directory: %s\n", pagesDir)
+		log.Fatal(err)
+	}
+	indexFile := filepath.Join(pagesDir, "index.md")
+	err = os.WriteFile(indexFile, []byte(INDEX_MD), 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of file: %s\n", indexFile)
+		log.Fatal(err)
+	}
+
+	staticDir := filepath.Join(rootDir, "static")
+	err = os.MkdirAll(staticDir, 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of directory: %s\n", staticDir)
+		log.Fatal(err)
+	}
+	mainJS := filepath.Join(staticDir, "main.js")
+	err = os.WriteFile(mainJS, []byte(MAIN_JS), 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of file: %s\n", mainJS)
+		log.Fatal(err)
+	}
+
+	templatesDir := filepath.Join(rootDir, "templates")
+	err = os.MkdirAll(templatesDir, 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of directory: %s\n", templatesDir)
+		log.Fatal(err)
+	}
+
+	defaultHTML := filepath.Join(templatesDir, "default.html")
+	err = os.WriteFile(defaultHTML, []byte(DEFAULT_HTML), 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of file: %s\n", defaultHTML)
+		log.Fatal(err)
+	}
 }
 
-func Remove() {
-	fmt.Println("Removing project...")
-}
+func (b *Blog) Build() {
+	var buf bytes.Buffer
 
-func ParseMD() {
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
-	)
-	source, err := os.ReadFile("util/testfiles/test.md")
+	// future considerations: should this be moved into struct Blog as a []string member variable?
+	pagesDir := filepath.Join(b.Location, "pages")
+	// templatesDir := filepath.Join(b.Location, "templates")
+	// staticDir := filepath.Join(b.Location, "static")
+	// publicDir := filepath.Join(b.Location, "public")
+
+	publicDir := filepath.Join(b.Location, "public")
+	err := os.MkdirAll(publicDir, 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of directory: %s\n", publicDir)
+		log.Fatal(err)
+	}
+
+	// err := cp.Copy()
+	files, err := os.ReadDir(pagesDir)
 	if err != nil {
-		fmt.Print("Something went wrong while reading of file: ")
 		log.Fatal(err)
 	}
 
-	dest, err := os.Create("util/testfiles/test.html")
-	if err != nil {
-		fmt.Print("Something went wrong while creating the file: ")
-		log.Fatal(err)
-	}
-	// source := []byte(`# Hello World
-	// * one
-	// * two
-	// * threeq
+	for _, file := range files {
+		// we just need to process markdown files for now
+		if strings.HasSuffix(file.Name(), "md") {
 
-	// **CODE:**
-	// ## Heading 3`)
-	fmt.Printf("Rendering of Markdown initiated: %s\n", source)
-	if err := md.Convert(source, dest); err != nil {
-		fmt.Print("Something went wrong during the parsing of markdown: ")
-		log.Fatal(err)
-	}
-	fmt.Printf("Markdown successfully parsed and written to: %s\n", buf.String())
-	//err := os.WriteFile("test.html", []byte(buf))
+			fileSuffix, _ := strings.CutSuffix(file.Name(), ".md")
+			content, err := os.ReadFile(file.Name())
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := goldmark.Convert([]byte(content), &buf); err != nil {
+				panic(err)
+			}
 
-}
-
-func ShowDefault(dir string) {
-	wd, err := os.Getwd()
-	if err != nil {
-		fmt.Print("Error during request of working directory: ")
-		log.Fatal(err)
-	}
-	fmt.Println("DEFAULT PATH: ", wd)
-}
-
-func setup(p, n string) {
-	wd, err := os.Getwd()
-	if err != nil {
-		fmt.Print("Error during request of working directory: ")
-		log.Fatal(err)
-	}
-	if wd != p {
-		fmt.Printf("Path provided is different from current directory. Changing directory to '%s'\n", p)
-		err = os.Chdir(p)
-		if err != nil {
-			fmt.Print("Error during change of directory: ")
-			log.Fatal(err)
+			processedFileName := strings.Join([]string{fileSuffix, "html"}, ".")
+			processedFile := filepath.Join(publicDir, processedFileName)
+			err = os.WriteFile(processedFile, buf.Bytes(), 0755)
+			if err != nil && !os.IsExist(err) {
+				fmt.Printf("Error during creation of file: %s\n", processedFileName)
+				log.Fatal(err)
+			}
+		} else {
+			continue
 		}
 	}
 
-	err = os.Mkdir(n, 0755)
-	if err != nil && !os.IsExist(err) {
-		fmt.Print("Error during creation of directory: ")
-		log.Fatal(err)
+	if err := goldmark.Convert([]byte(TESTMD), &buf); err != nil {
+		panic(err)
 	}
-	wd, err = os.Getwd()
-	if err != nil {
-		fmt.Print("Error during request of working directory: ")
-		log.Fatal(err)
-	}
-	fmt.Printf("Created directory '/%s' at path '%s\n'", n, wd)
-	fmt.Println("Creating subdirectories...")
-	os.Chdir("./" + n)
-	wd, err = os.Getwd()
-	if err != nil {
-		fmt.Print("Error during request of working directory: ")
-		log.Fatal(err)
-	}
-	fmt.Println("Changed directory to: ", wd)
-
-	err = os.Mkdir("static", 0755)
-	if err != nil && !os.IsExist(err) {
-		fmt.Print("Error during creation of directory: ")
-		log.Fatal(err)
-	}
-	fmt.Println("Created directory '/static' at path: ", wd)
-
-	err = os.Mkdir("templates", 0755)
-	if err != nil && !os.IsExist(err) {
-		fmt.Print("Error during creation of directory: ")
-		log.Fatal(err)
-	}
-	fmt.Println("Created directory '/templates' at path: ", wd)
+	fmt.Println(buf.String())
 }
