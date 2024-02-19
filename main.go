@@ -1,3 +1,13 @@
+/*
+	Some considerations for the future:
+	- Currently, only one blog project can be configured at the same time:
+		- a config.json is used for persisting the data about the blog project for the CLI
+		- this config file is always stored at $HOME/.config/govila
+		- IMPORTANT: govila init can currently overwrite the config file with a new path!
+			--> This can potentially break the config file's path, therefore changing it
+			for the execution of other commands
+*/
+
 package main
 
 import (
@@ -44,26 +54,10 @@ func main() {
 		fmt.Println("INIT SUBCOMMAND CALLED")
 		fmt.Println()
 
-		// review pointer arguments; are they really necessary?
 		blog.Setup(*initName, *initPath)
 
 	case "build":
-		/* CURRENT PROBLEM: location of blog is not retained across executions
-		   --> We need a config file that tracks the blog location
-		*/
 		blog.Build()
-
-	// case "help":
-	// 	govila.Help()
-
-	// case "remove":
-	// 	govila.Remove()
-
-	// case "parseMD":
-	// 	govila.ParseMD()
-
-	// case "showDefault":
-	// 	govila.ShowDefault(defaultPath)
 
 	// add help command as default output ?
 	default:

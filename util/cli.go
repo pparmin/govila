@@ -2,6 +2,7 @@ package govila
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,11 @@ import (
 
 	"github.com/yuin/goldmark"
 )
+
+type Config struct {
+	Name     string
+	Location string
+}
 
 type Blog struct {
 	Name     string
@@ -88,41 +94,41 @@ func (b *Blog) Setup(name, path string) {
 		fmt.Printf("Error during creation of file: %s\n", defaultHTML)
 		log.Fatal(err)
 	}
+
+	b.writeConfig()
 }
 
 func (b *Blog) Build() {
 	var buf bytes.Buffer
 
-	// future considerations: should this be moved into struct Blog as a []string member variable?
-	pagesDir := filepath.Join(b.Location, "pages")
-	// templatesDir := filepath.Join(b.Location, "templates")
-	// staticDir := filepath.Join(b.Location, "static")
-	// publicDir := filepath.Join(b.Location, "public")
-
-	publicDir := filepath.Join(b.Location, "public")
+	blogLocation := readConfig()
+	pagesDir := filepath.Join(blogLocation, "pages")
+	publicDir := filepath.Join(blogLocation, "public")
 	err := os.MkdirAll(publicDir, 0755)
 	if err != nil && !os.IsExist(err) {
 		fmt.Printf("Error during creation of directory: %s\n", publicDir)
 		log.Fatal(err)
 	}
 
-	// err := cp.Copy()
 	files, err := os.ReadDir(pagesDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	fmt.Println("Printing from directory: ", pagesDir)
 	for _, file := range files {
+		fullPath := filepath.Join(pagesDir, file.Name())
+		fmt.Println("Full path for file: ", fullPath)
 		// we just need to process markdown files for now
 		if strings.HasSuffix(file.Name(), "md") {
 
 			fileSuffix, _ := strings.CutSuffix(file.Name(), ".md")
-			content, err := os.ReadFile(file.Name())
+			content, err := os.ReadFile(fullPath)
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal("Error while reading markdown file: ", err)
 			}
 			if err := goldmark.Convert([]byte(content), &buf); err != nil {
-				panic(err)
+				log.Fatal("Error while parsing markdown file: ", err)
 			}
 
 			processedFileName := strings.Join([]string{fileSuffix, "html"}, ".")
@@ -141,4 +147,51 @@ func (b *Blog) Build() {
 		panic(err)
 	}
 	fmt.Println(buf.String())
+}
+
+func (b *Blog) writeConfig() {
+	blogData, err := json.Marshal(b)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(blogData))
+
+	homeDirectory := os.Getenv("HOME")
+	configDirectory := filepath.Join(homeDirectory, ".config", "govila")
+	_, err = os.ReadDir(configDirectory)
+	if os.IsExist(err) {
+		fmt.Println("directory already exists!")
+	}
+
+	err = os.MkdirAll(configDirectory, 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of directory: %s\n", configDirectory)
+		log.Fatal(err)
+	}
+	fmt.Println("config directory successfully created at ", configDirectory)
+	configFile := filepath.Join(configDirectory, "config.json")
+
+	err = os.WriteFile(configFile, []byte(blogData), 0755)
+	if err != nil && !os.IsExist(err) {
+		fmt.Printf("Error during creation of file: %s\n", configFile)
+		log.Fatal(err)
+	}
+	fmt.Println("Written file to ", configFile)
+}
+
+func readConfig() string {
+	homeDirectory := os.Getenv("HOME")
+	configFile := filepath.Join(homeDirectory, ".config", "govila", "config.json")
+	config, err := os.ReadFile(configFile)
+	if err != nil {
+		log.Fatal("Error during reading of config file: ", err)
+	}
+
+	var target map[string]string
+	if err = json.Unmarshal(config, &target); err != nil {
+		log.Fatal("Error during unmarshaling of config file: ", err)
+	}
+
+	blogLocation := target["Location"]
+	return blogLocation
 }
